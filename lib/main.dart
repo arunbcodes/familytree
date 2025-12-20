@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// Uncomment when Supabase is configured:
-// import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'app.dart';
+import 'data/services/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase - uncomment when you have credentials:
-  // await Supabase.initialize(
-  //   url: const String.fromEnvironment('SUPABASE_URL'),
-  //   anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
-  // );
+  // Initialize Supabase (only if configured)
+  // Set SUPABASE_URL and SUPABASE_ANON_KEY environment variables
+  // or update lib/core/config/supabase_config.dart
+  await SupabaseService.initialize();
 
   runApp(
     const ProviderScope(
