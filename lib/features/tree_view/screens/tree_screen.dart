@@ -313,6 +313,19 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
               ref.read(selectedPersonIdProvider.notifier).state =
                   selectedPersonId == personId ? null : personId;
             },
+            onPersonDoubleTap: (personId) {
+              // Double-tap to make this person the new center
+              HapticFeedback.mediumImpact();
+              ref.read(centerPersonIdProvider.notifier).state = personId;
+              // Show a brief feedback
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Centered on ${treeData.findPerson(personId)?.firstName ?? 'person'}'),
+                  duration: const Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
             onPersonLongPress: (personId) {
               HapticFeedback.mediumImpact();
               context.push('/person/$personId');

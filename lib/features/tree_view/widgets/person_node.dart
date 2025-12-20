@@ -45,6 +45,7 @@ class PersonNode extends StatelessWidget {
   final bool showExpandButton;
   final double scale;
   final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
   final VoidCallback? onLongPress;
   final VoidCallback? onExpand;
 
@@ -56,6 +57,7 @@ class PersonNode extends StatelessWidget {
     this.showExpandButton = false,
     this.scale = 1.0,
     this.onTap,
+    this.onDoubleTap,
     this.onLongPress,
     this.onExpand,
   });
@@ -79,6 +81,7 @@ class PersonNode extends StatelessWidget {
               isSelected: isSelected,
               isElderlyAssisted: person.isElderlyAssisted,
               onTap: onTap,
+              onDoubleTap: onDoubleTap,
               onLongPress: onLongPress,
             ),
             // Center person indicator

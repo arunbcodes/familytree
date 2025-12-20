@@ -13,6 +13,7 @@ class TreeCanvas extends StatefulWidget {
   final String centerPersonId;
   final LayoutType layoutType;
   final Function(String personId)? onPersonTap;
+  final Function(String personId)? onPersonDoubleTap;
   final Function(String personId)? onPersonLongPress;
   final Function(String personId)? onExpandPerson;
   final Function(Offset position)? onAddPerson;
@@ -24,6 +25,7 @@ class TreeCanvas extends StatefulWidget {
     required this.centerPersonId,
     this.layoutType = LayoutType.radial,
     this.onPersonTap,
+    this.onPersonDoubleTap,
     this.onPersonLongPress,
     this.onExpandPerson,
     this.onAddPerson,
@@ -256,13 +258,14 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
             top: canvasPos.dy - (AppSizes.hexagonMedium * 1.1547 * nodeScale) / 2,
             child: FadeTransition(
               opacity: _appearAnimController,
-              child: PersonNode(
+              child:               PersonNode(
                 person: person,
                 isSelected: _selectedPersonId == person.id,
                 isCenter: person.id == widget.centerPersonId,
                 showExpandButton: _selectedPersonId == person.id,
                 scale: nodeScale,
                 onTap: () => _handlePersonTap(person.id),
+                onDoubleTap: () => _handlePersonDoubleTap(person.id),
                 onLongPress: () => widget.onPersonLongPress?.call(person.id),
                 onExpand: () => widget.onExpandPerson?.call(person.id),
               ),
@@ -280,6 +283,57 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
       _selectedPersonId = _selectedPersonId == personId ? null : personId;
     });
     widget.onPersonTap?.call(personId);
+  }
+
+  void _handlePersonDoubleTap(String personId) {
+    // Animate centering on the person
+    _animateCenterOnPerson(personId);
+    widget.onPersonDoubleTap?.call(personId);
+  }
+
+  void _animateCenterOnPerson(String personId) {
+    final position = _nodePositions[personId];
+    if (position == null) return;
+
+    final screenSize = MediaQuery.of(context).size;
+    final centerX = screenSize.width / 2;
+    final centerY = screenSize.height / 2;
+
+    // Calculate target translation
+    final canvasCenter = Offset(AppSizes.canvasCenter, AppSizes.canvasCenter);
+    final personCanvasPos = canvasCenter + position;
+
+    // Get current scale
+    final currentScale = _transformController.value.getMaxScaleOnAxis();
+
+    // Create target matrix (preserve current scale)
+    final targetMatrix = Matrix4.identity()
+      ..setTranslationRaw(
+        centerX - personCanvasPos.dx * currentScale,
+        centerY - personCanvasPos.dy * currentScale,
+        0,
+      );
+    targetMatrix.setEntry(0, 0, currentScale);
+    targetMatrix.setEntry(1, 1, currentScale);
+
+    // Animate to target
+    final animation = Matrix4Tween(
+      begin: _transformController.value,
+      end: targetMatrix,
+    ).animate(CurvedAnimation(
+      parent: _appearAnimController,
+      curve: Curves.easeInOutCubic,
+    ));
+
+    void listener() {
+      _transformController.value = animation.value;
+    }
+
+    animation.addListener(listener);
+    _appearAnimController.reset();
+    _appearAnimController.forward().then((_) {
+      animation.removeListener(listener);
+    });
   }
 }
 

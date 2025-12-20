@@ -27,6 +27,9 @@ class HexagonAvatar extends StatelessWidget {
   /// Callback when the avatar is tapped
   final VoidCallback? onTap;
 
+  /// Callback when the avatar is double-tapped
+  final VoidCallback? onDoubleTap;
+
   /// Callback when the avatar is long-pressed
   final VoidCallback? onLongPress;
 
@@ -39,6 +42,7 @@ class HexagonAvatar extends StatelessWidget {
     this.isSelected = false,
     this.isElderlyAssisted = false,
     this.onTap,
+    this.onDoubleTap,
     this.onLongPress,
   });
 
@@ -49,6 +53,7 @@ class HexagonAvatar extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onDoubleTap: onDoubleTap,
       onLongPress: onLongPress,
       child: SizedBox(
         width: size,
@@ -231,6 +236,7 @@ class AnimatedHexagonAvatar extends StatefulWidget {
   final bool isSelected;
   final bool isElderlyAssisted;
   final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
   final VoidCallback? onLongPress;
 
   const AnimatedHexagonAvatar({
@@ -242,6 +248,7 @@ class AnimatedHexagonAvatar extends StatefulWidget {
     this.isSelected = false,
     this.isElderlyAssisted = false,
     this.onTap,
+    this.onDoubleTap,
     this.onLongPress,
   });
 
@@ -297,6 +304,7 @@ class _AnimatedHexagonAvatarState extends State<AnimatedHexagonAvatar>
             isSelected: widget.isSelected,
             isElderlyAssisted: widget.isElderlyAssisted,
             onTap: widget.onTap,
+            onDoubleTap: widget.onDoubleTap,
             onLongPress: widget.onLongPress,
           ),
         );
