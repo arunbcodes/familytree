@@ -374,10 +374,7 @@ class _PersonDetailView extends ConsumerWidget {
   }
 
   void _showEditPersonSheet(BuildContext context, WidgetRef ref) {
-    // TODO: Implement edit person form
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit person coming soon!')),
-    );
+    context.push('/person/${person.id}/edit');
   }
 
   void _showOptionsMenu(BuildContext context, WidgetRef ref) {

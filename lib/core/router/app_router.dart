@@ -7,6 +7,7 @@ import '../../features/auth/screens/signup_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/tree_view/screens/tree_screen.dart';
 import '../../features/person_detail/screens/person_detail_screen.dart';
+import '../../features/person_detail/screens/edit_person_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 
 /// Route names for type-safe navigation
@@ -17,6 +18,7 @@ class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String tree = '/tree';
   static const String personDetail = '/person/:id';
+  static const String personEdit = '/person/:id/edit';
   static const String settings = '/settings';
 }
 
@@ -60,6 +62,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final personId = state.pathParameters['id']!;
           return PersonDetailScreen(personId: personId);
+        },
+      ),
+
+      // Person edit
+      GoRoute(
+        path: AppRoutes.personEdit,
+        builder: (context, state) {
+          final personId = state.pathParameters['id']!;
+          return EditPersonScreen(personId: personId);
         },
       ),
 
