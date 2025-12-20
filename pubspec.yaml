@@ -1,0 +1,53 @@
+name: familytree
+description: A family tree visualization app with interactive graph UI
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+  cached_network_image: ^3.3.0
+  flutter_animate: ^4.3.0
+
+  # State management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+
+  # Navigation
+  go_router: ^13.0.0
+
+  # Backend
+  supabase_flutter: ^2.3.0
+
+  # Local storage (offline)
+  drift: ^2.14.1
+  sqlite3_flutter_libs: ^0.5.18
+  path_provider: ^2.1.1
+  path: ^1.8.3
+
+  # Utilities
+  uuid: ^4.2.1
+  intl: ^0.18.1
+  image_picker: ^1.0.5
+  # image_cropper: ^8.0.0  # Uncomment when needed for photo cropping (has web issues)
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.7
+  riverpod_generator: ^2.3.9
+  drift_dev: ^2.14.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
