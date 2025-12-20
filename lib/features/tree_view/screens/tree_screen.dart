@@ -12,6 +12,7 @@ import '../../../data/providers/database_provider.dart';
 import '../../../data/repositories/tree_repository.dart';
 import '../providers/tree_provider.dart';
 import '../widgets/tree_canvas.dart';
+import '../widgets/search_bar.dart';
 
 /// Main screen displaying the family tree visualization
 class TreeScreen extends ConsumerStatefulWidget {
@@ -256,6 +257,16 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
       appBar: AppBar(
         title: const Text('My Family Tree'),
         actions: [
+          // Search
+          if (_treeId != null)
+            TreeSearchBar(
+              treeId: _treeId!,
+              onPersonSelected: (personId) {
+                // Center on the selected person
+                ref.read(centerPersonIdProvider.notifier).state = personId;
+                ref.read(selectedPersonIdProvider.notifier).state = personId;
+              },
+            ),
           // Layout type toggle
           PopupMenuButton<LayoutType>(
             icon: const Icon(Icons.auto_graph),
