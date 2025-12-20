@@ -164,6 +164,16 @@ extension SupabaseDataExtension on SupabaseClient {
         .eq('id', person.id);
   }
 
+  /// Upsert a person (insert or update)
+  Future<Person> upsertPerson(Person person) async {
+    final response = await from('persons')
+        .upsert(person.toJson())
+        .select()
+        .single();
+
+    return Person.fromJson(response);
+  }
+
   /// Delete a person
   Future<void> deletePerson(String personId) async {
     await from('persons').delete().eq('id', personId);
@@ -197,6 +207,16 @@ extension SupabaseDataExtension on SupabaseClient {
     await from('relationships')
         .update(relationship.toJson())
         .eq('id', relationship.id);
+  }
+
+  /// Upsert a relationship (insert or update)
+  Future<Relationship> upsertRelationship(Relationship relationship) async {
+    final response = await from('relationships')
+        .upsert(relationship.toJson())
+        .select()
+        .single();
+
+    return Relationship.fromJson(response);
   }
 
   /// Delete a relationship

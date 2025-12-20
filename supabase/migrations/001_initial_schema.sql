@@ -182,7 +182,8 @@ CREATE TABLE IF NOT EXISTS public.relationships (
     end_date DATE,
     created_by UUID NOT NULL REFERENCES public.profiles(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT different_persons CHECK (person1_id != person2_id)
+    CONSTRAINT different_persons CHECK (person1_id != person2_id),
+    CONSTRAINT unique_relationship UNIQUE (person1_id, person2_id, type)
 );
 
 -- Enable RLS

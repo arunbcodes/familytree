@@ -119,22 +119,12 @@ class SyncService {
       final persons = await _db.personDao.getPersonsForTree(treeId);
       final relationships = await _db.relationshipDao.getRelationshipsForTree(treeId);
 
-      // Push to remote
+      // Push to remote using upsert
       for (final person in persons) {
-        try {
-          await _supabase.createPerson(person);
-        } catch (_) {
-          // Person might already exist, try update
-          await _supabase.updatePerson(person);
-        }
+        await _supabase.upsertPerson(person);
       }
       for (final relationship in relationships) {
-        try {
-          await _supabase.createRelationship(relationship);
-        } catch (_) {
-          // Relationship might already exist, try update
-          await _supabase.updateRelationship(relationship);
-        }
+        await _supabase.upsertRelationship(relationship);
       }
     } finally {
       _isSyncing = false;

@@ -117,13 +117,38 @@ class _EditPersonScreenState extends ConsumerState<EditPersonScreen> {
     );
 
     if (image != null) {
-      // TODO: Upload to Supabase storage and get URL
-      // For now, just store the local path
+      final uploadedUrl = await _uploadPhoto(image.path);
       setState(() {
-        _photoUrl = image.path;
+        _photoUrl = uploadedUrl;
         _hasChanges = true;
       });
     }
+  }
+
+  /// Upload photo to storage and return the URL
+  /// 
+  /// Currently stores local path. When Supabase storage is configured,
+  /// this will upload to remote storage and return the public URL.
+  Future<String> _uploadPhoto(String localPath) async {
+    // TODO: Implement Supabase storage upload when configured
+    // Example implementation:
+    // 
+    // if (SupabaseService.isAvailable) {
+    //   final fileName = '${_originalPerson!.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    //   final file = File(localPath);
+    //   final bytes = await file.readAsBytes();
+    //   
+    //   await SupabaseService.client!.storage
+    //       .from('avatars')
+    //       .uploadBinary(fileName, bytes);
+    //   
+    //   return SupabaseService.client!.storage
+    //       .from('avatars')
+    //       .getPublicUrl(fileName);
+    // }
+    
+    // For now, return local path
+    return localPath;
   }
 
   Future<void> _selectDate({required bool isBirthDate}) async {
