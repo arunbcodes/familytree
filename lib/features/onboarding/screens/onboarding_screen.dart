@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../core/router/app_router.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/models/relationship.dart';
+import '../../../data/providers/database_provider.dart';
+import '../../tree_view/providers/tree_provider.dart';
 
 /// Onboarding wizard for new users to set up their family tree
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pageController = PageController();
   int _currentPage = 0;
+  bool _isSaving = false;
 
   // Form data
   final _selfFormKey = GlobalKey<FormState>();
@@ -58,11 +64,152 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
-    // TODO: Save all data to the database
-    // Create family tree, add self, parents, siblings
+    if (_isSaving) return;
 
-    if (mounted) {
-      context.go(AppRoutes.tree);
+    setState(() => _isSaving = true);
+
+    try {
+      final repository = ref.read(treeRepositoryProvider);
+
+      // Use a temporary user ID (will be replaced with actual auth)
+      const userId = 'local-user';
+
+      // 1. Create the family tree
+      final tree = await repository.createTree(
+        name: '$_firstName\'s Family',
+        ownerId: userId,
+        description: 'My family tree',
+      );
+
+      // 2. Add self as the first person
+      final self = await repository.addPerson(
+        treeId: tree.id,
+        createdBy: userId,
+        firstName: _firstName,
+        lastName: _lastName,
+        birthDate: _birthDate,
+      );
+
+      String? motherId;
+      String? fatherId;
+
+      // 3. Add mother if provided
+      if (_addMother && _motherFirstName.isNotEmpty) {
+        final mother = await repository.addPerson(
+          treeId: tree.id,
+          createdBy: userId,
+          firstName: _motherFirstName,
+          lastName: _motherLastName.isEmpty ? _lastName : _motherLastName,
+        );
+        motherId = mother.id;
+
+        // Create parent-child relationship (mother -> self)
+        await repository.addRelationship(
+          treeId: tree.id,
+          person1Id: mother.id,
+          person2Id: self.id,
+          type: RelationshipType.parentChild,
+          createdBy: userId,
+        );
+      }
+
+      // 4. Add father if provided
+      if (_addFather && _fatherFirstName.isNotEmpty) {
+        final father = await repository.addPerson(
+          treeId: tree.id,
+          createdBy: userId,
+          firstName: _fatherFirstName,
+          lastName: _fatherLastName.isEmpty ? _lastName : _fatherLastName,
+        );
+        fatherId = father.id;
+
+        // Create parent-child relationship (father -> self)
+        await repository.addRelationship(
+          treeId: tree.id,
+          person1Id: father.id,
+          person2Id: self.id,
+          type: RelationshipType.parentChild,
+          createdBy: userId,
+        );
+
+        // Create spouse relationship between parents if both exist
+        if (motherId != null) {
+          await repository.addRelationship(
+            treeId: tree.id,
+            person1Id: motherId,
+            person2Id: father.id,
+            type: RelationshipType.spouse,
+            createdBy: userId,
+          );
+        }
+      }
+
+      // 5. Add siblings
+      for (final sibling in _siblings) {
+        final siblingPerson = await repository.addPerson(
+          treeId: tree.id,
+          createdBy: userId,
+          firstName: sibling['firstName'] ?? '',
+          lastName: sibling['lastName'] ?? _lastName,
+        );
+
+        // Create sibling relationship
+        await repository.addRelationship(
+          treeId: tree.id,
+          person1Id: self.id,
+          person2Id: siblingPerson.id,
+          type: RelationshipType.sibling,
+          createdBy: userId,
+        );
+
+        // Connect siblings to parents
+        if (motherId != null) {
+          await repository.addRelationship(
+            treeId: tree.id,
+            person1Id: motherId,
+            person2Id: siblingPerson.id,
+            type: RelationshipType.parentChild,
+            createdBy: userId,
+          );
+        }
+        if (fatherId != null) {
+          await repository.addRelationship(
+            treeId: tree.id,
+            person1Id: fatherId,
+            person2Id: siblingPerson.id,
+            type: RelationshipType.parentChild,
+            createdBy: userId,
+          );
+        }
+      }
+
+      // 6. Set the current tree and center person
+      ref.read(currentTreeIdProvider.notifier).state = tree.id;
+      ref.read(centerPersonIdProvider.notifier).state = self.id;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Family tree created successfully!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go(AppRoutes.tree);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating family tree: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -186,6 +333,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 labelText: 'First Name',
                 border: OutlineInputBorder(),
               ),
+              textCapitalization: TextCapitalization.words,
               onChanged: (value) => setState(() => _firstName = value),
               validator: (value) =>
                   value?.isEmpty ?? true ? 'Required' : null,
@@ -197,6 +345,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 labelText: 'Last Name',
                 border: OutlineInputBorder(),
               ),
+              textCapitalization: TextCapitalization.words,
               onChanged: (value) => setState(() => _lastName = value),
               validator: (value) =>
                   value?.isEmpty ?? true ? 'Required' : null,
@@ -299,15 +448,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
+                      textCapitalization: TextCapitalization.words,
                       onChanged: (value) => _motherFirstName = value,
                     ),
                     const SizedBox(height: AppSizes.spacingSm),
                     TextField(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Last Name',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         isDense: true,
+                        hintText: 'Default: $_lastName',
                       ),
+                      textCapitalization: TextCapitalization.words,
                       onChanged: (value) => _motherLastName = value,
                     ),
                   ],
@@ -346,15 +498,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
+                      textCapitalization: TextCapitalization.words,
                       onChanged: (value) => _fatherFirstName = value,
                     ),
                     const SizedBox(height: AppSizes.spacingSm),
                     TextField(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Last Name',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         isDense: true,
+                        hintText: 'Default: $_lastName',
                       ),
+                      textCapitalization: TextCapitalization.words,
                       onChanged: (value) => _fatherLastName = value,
                     ),
                   ],
@@ -451,11 +606,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             TextField(
               decoration: const InputDecoration(labelText: 'First Name'),
+              textCapitalization: TextCapitalization.words,
               onChanged: (value) => firstName = value,
             ),
             const SizedBox(height: AppSizes.spacingSm),
             TextField(
-              decoration: const InputDecoration(labelText: 'Last Name'),
+              decoration: InputDecoration(
+                labelText: 'Last Name',
+                hintText: 'Default: $_lastName',
+              ),
+              textCapitalization: TextCapitalization.words,
               onChanged: (value) => lastName = value,
             ),
           ],
@@ -471,7 +631,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 setState(() {
                   _siblings.add({
                     'firstName': firstName,
-                    'lastName': lastName,
+                    'lastName': lastName.isEmpty ? _lastName : lastName,
                   });
                 });
                 Navigator.pop(context);
@@ -486,6 +646,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   /// Step 4: Complete
   Widget _buildCompletePage() {
+    final memberCount = 1 +
+        (_addMother && _motherFirstName.isNotEmpty ? 1 : 0) +
+        (_addFather && _fatherFirstName.isNotEmpty ? 1 : 0) +
+        _siblings.length;
+
     return Padding(
       padding: const EdgeInsets.all(AppSizes.spacingLg),
       child: Column(
@@ -504,7 +669,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: AppSizes.spacingMd),
           Text(
-            'Your family tree is ready. You can add more family members anytime.',
+            'Your family tree with $memberCount ${memberCount == 1 ? 'member' : 'members'} is ready.',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Colors.grey,
                 ),
@@ -521,10 +686,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   _buildSummaryRow('You', '$_firstName $_lastName'),
                   if (_addMother && _motherFirstName.isNotEmpty)
                     _buildSummaryRow(
-                        'Mother', '$_motherFirstName $_motherLastName'),
+                      'Mother',
+                      '$_motherFirstName ${_motherLastName.isEmpty ? _lastName : _motherLastName}',
+                    ),
                   if (_addFather && _fatherFirstName.isNotEmpty)
                     _buildSummaryRow(
-                        'Father', '$_fatherFirstName $_fatherLastName'),
+                      'Father',
+                      '$_fatherFirstName ${_fatherLastName.isEmpty ? _lastName : _fatherLastName}',
+                    ),
                   if (_siblings.isNotEmpty)
                     _buildSummaryRow('Siblings', '${_siblings.length} added'),
                 ],
@@ -534,8 +703,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: AppSizes.spacingXl),
 
           FilledButton(
-            onPressed: _completeOnboarding,
-            child: const Text('View My Family Tree'),
+            onPressed: _isSaving ? null : _completeOnboarding,
+            child: _isSaving
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('View My Family Tree'),
           ),
         ],
       ),
