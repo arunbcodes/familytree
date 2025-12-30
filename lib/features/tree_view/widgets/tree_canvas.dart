@@ -146,7 +146,10 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
 
   void _onTransformChanged() {
     final scale = _transformController.value.getMaxScaleOnAxis();
-    if (scale != _currentScale) {
+    // Only trigger rebuild if scale crosses a threshold (reduces rebuilds)
+    final shouldUpdate = (scale - _currentScale).abs() > 0.05 ||
+        (_currentScale < AppSizes.lodZoomThreshold) != (scale < AppSizes.lodZoomThreshold);
+    if (shouldUpdate) {
       setState(() {
         _currentScale = scale;
       });
@@ -183,41 +186,49 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
         constrained: false,
         boundaryMargin: const EdgeInsets.all(double.infinity),
         onInteractionUpdate: (_) => _onTransformChanged(),
-        child: SizedBox(
-          width: AppSizes.canvasSize,
-          height: AppSizes.canvasSize,
-          child: Stack(
-            children: [
-              // Background grid (optional, for visual reference)
-              if (_currentScale > 0.5) _buildGrid(),
+            child: SizedBox(
+              width: AppSizes.canvasSize,
+              height: AppSizes.canvasSize,
+              child: Stack(
+                children: [
+                  // Background grid (optional, for visual reference)
+                  if (_currentScale > 0.5) _buildGrid(),
 
-              // Relationship edges (drawn first, behind nodes)
-              RelationshipEdges(
-                relationships: widget.relationships,
-                nodePositions: _nodePositions,
-                canvasOffset: const Offset(AppSizes.canvasCenter, AppSizes.canvasCenter),
-                selectedPersonId: _selectedPersonId,
-                scale: _currentScale,
-                canvasSize: const Size(AppSizes.canvasSize, AppSizes.canvasSize),
+                  // Relationship edges (drawn first, behind nodes)
+                  // Wrap in RepaintBoundary to isolate repaints
+                  RepaintBoundary(
+                    child: RelationshipEdges(
+                      relationships: widget.relationships,
+                      nodePositions: _nodePositions,
+                      canvasOffset: const Offset(AppSizes.canvasCenter, AppSizes.canvasCenter),
+                      selectedPersonId: _selectedPersonId,
+                      scale: _currentScale,
+                      canvasSize: const Size(AppSizes.canvasSize, AppSizes.canvasSize),
+                    ),
+                  ),
+
+                  // Person nodes
+                  ..._buildNodes(),
+                ],
               ),
-
-              // Person nodes
-              ..._buildNodes(),
-            ],
-          ),
-        ),
+            ),
       ),
     );
   }
 
   Widget _buildGrid() {
-    return CustomPaint(
-      size: const Size(AppSizes.canvasSize, AppSizes.canvasSize),
-      painter: _GridPainter(
-        gridSize: 50,
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
+    // Cache the grid to avoid rebuilding on every frame
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: const Size(AppSizes.canvasSize, AppSizes.canvasSize),
+        isComplex: true,
+        willChange: false,
+        painter: _GridPainter(
+          gridSize: 50,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.03),
+        ),
       ),
     );
   }
