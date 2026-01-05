@@ -417,23 +417,46 @@ class _PersonDetailView extends ConsumerWidget {
   void _confirmDelete(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Remove Person'),
         content: Text(
           'Are you sure you want to remove ${person.fullName} from the family tree? '
-          'This action cannot be undone.',
+          'This will also remove all their relationships. This action cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
-              // TODO: Delete person via notifier
-              if (context.mounted) {
-                context.pop();
+              Navigator.pop(dialogContext);
+
+              try {
+                // Delete person via TreeNotifier
+                final notifier = ref.read(treeNotifierProvider(person.treeId).notifier);
+                await notifier.deletePerson(person.id);
+
+                // Navigate back to tree
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${person.fullName} removed from tree'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  context.go('/tree');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error removing person: $e'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
               }
             },
             child: const Text('Remove', style: TextStyle(color: Colors.red)),
