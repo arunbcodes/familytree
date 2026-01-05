@@ -91,6 +91,11 @@ class RelationshipDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
+  /// Delete all relationships
+  Future<int> deleteAll() async {
+    return await delete(relationshipsTable).go();
+  }
+
   /// Get unsynced relationships
   Future<List<Relationship>> getUnsyncedRelationships() async {
     final rows = await (select(relationshipsTable)

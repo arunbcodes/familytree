@@ -72,6 +72,12 @@ class FamilyTreeDao extends DatabaseAccessor<AppDatabase>
     await (delete(treeMembersTable)..where((m) => m.treeId.equals(id))).go();
   }
 
+  /// Delete all trees and members
+  Future<void> deleteAll() async {
+    await delete(treeMembersTable).go();
+    await delete(familyTreesTable).go();
+  }
+
   /// Get user's role in a tree
   Future<TreeRole?> getUserRoleInTree(String userId, String treeId) async {
     final row = await (select(treeMembersTable)

@@ -67,6 +67,11 @@ class PersonDao extends DatabaseAccessor<AppDatabase> with _$PersonDaoMixin {
         .go();
   }
 
+  /// Delete all persons
+  Future<int> deleteAll() async {
+    return await delete(personsTable).go();
+  }
+
   /// Get unsynced persons
   Future<List<Person>> getUnsyncedPersons() async {
     final rows = await (select(personsTable)
