@@ -5,8 +5,8 @@ enum TreeVisibility {
   /// Only the owner can see
   private,
 
-  /// Only invited members can see
-  inviteOnly,
+  /// Only family members can see
+  family,
 
   /// Anyone can view (but not edit)
   public,
@@ -16,6 +16,9 @@ enum TreeVisibility {
 enum TreeRole {
   /// Full control over the tree
   owner,
+
+  /// Shared ownership (can do everything owner can)
+  coOwner,
 
   /// Can add/edit people and relationships
   editor,
@@ -27,13 +30,14 @@ enum TreeRole {
 /// Extension for TreeRole permissions
 extension TreeRoleExtension on TreeRole {
   bool get canEdit =>
-      this == TreeRole.owner || this == TreeRole.editor;
+      this == TreeRole.owner || this == TreeRole.coOwner || this == TreeRole.editor;
 
-  bool get canInvite => this == TreeRole.owner || this == TreeRole.editor;
+  bool get canInvite =>
+      this == TreeRole.owner || this == TreeRole.coOwner || this == TreeRole.editor;
 
-  bool get canDelete => this == TreeRole.owner;
+  bool get canDelete => this == TreeRole.owner || this == TreeRole.coOwner;
 
-  bool get canChangeSettings => this == TreeRole.owner;
+  bool get canChangeSettings => this == TreeRole.owner || this == TreeRole.coOwner;
 
   bool get canPromoteToOwner => this == TreeRole.owner;
 }
@@ -152,25 +156,32 @@ class TreeMember {
 
   /// Convert to JSON for API/database
   Map<String, dynamic> toJson() {
+    // Convert coOwner to co_owner for SQL compatibility
+    final roleStr = role == TreeRole.coOwner ? 'co_owner' : role.name;
     return {
       'tree_id': treeId,
       'user_id': userId,
       'person_id': personId,
-      'role': role.name,
+      'role': roleStr,
       'joined_at': joinedAt.toIso8601String(),
     };
   }
 
   /// Create from JSON (API/database response)
   factory TreeMember.fromJson(Map<String, dynamic> json) {
+    // Convert co_owner from SQL to coOwner
+    final roleStr = json['role'] as String;
+    final role = roleStr == 'co_owner'
+        ? TreeRole.coOwner
+        : TreeRole.values.firstWhere(
+            (r) => r.name == roleStr,
+            orElse: () => TreeRole.viewer,
+          );
     return TreeMember(
       treeId: json['tree_id'] as String,
       userId: json['user_id'] as String,
       personId: json['person_id'] as String?,
-      role: TreeRole.values.firstWhere(
-        (r) => r.name == json['role'],
-        orElse: () => TreeRole.viewer,
-      ),
+      role: role,
       joinedAt: DateTime.parse(json['joined_at'] as String),
     );
   }

@@ -112,12 +112,21 @@ CREATE TABLE IF NOT EXISTS public.persons (
     death_date DATE,
     is_deceased BOOLEAN NOT NULL DEFAULT FALSE,
     photo_url TEXT,
+    additional_photos JSONB DEFAULT '[]'::jsonb,
     bio TEXT,
     location TEXT,
     contact_email TEXT,
     contact_phone TEXT,
-    visibility TEXT NOT NULL DEFAULT 'tree_members' CHECK (visibility IN ('private', 'tree_members', 'public')),
+    -- Claim & Proxy fields
+    claimed_by UUID REFERENCES public.profiles(id),
+    claimed_at TIMESTAMPTZ,
+    is_claimable BOOLEAN NOT NULL DEFAULT TRUE,
+    proxy_managers JSONB DEFAULT '[]'::jsonb,
+    proxy_reason TEXT,
     is_elderly_assisted BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Privacy
+    visibility TEXT NOT NULL DEFAULT 'tree_members' CHECK (visibility IN ('private', 'tree_members', 'public')),
+    -- Metadata
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -177,7 +186,7 @@ CREATE TABLE IF NOT EXISTS public.relationships (
     tree_id UUID NOT NULL REFERENCES public.family_trees(id) ON DELETE CASCADE,
     person1_id UUID NOT NULL REFERENCES public.persons(id) ON DELETE CASCADE,
     person2_id UUID NOT NULL REFERENCES public.persons(id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK (type IN ('parent_child', 'spouse', 'sibling', 'adopted', 'foster', 'guardian')),
+    type TEXT NOT NULL CHECK (type IN ('parentChild', 'spouse', 'exSpouse', 'sibling', 'halfSibling', 'stepParent', 'adoptiveParent', 'godparent')),
     start_date DATE,
     end_date DATE,
     created_by UUID NOT NULL REFERENCES public.profiles(id),
