@@ -443,9 +443,9 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
                       ),
                       Slider(
                         value: currentSpacing,
-                        min: 120.0,
-                        max: 350.0,
-                        divisions: 23,
+                        min: 150.0,
+                        max: 400.0,
+                        divisions: 25,
                         onChanged: (value) {
                           setSliderState(() {
                             currentSpacing = value;
@@ -504,7 +504,7 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
                 children: [
                   TextButton(
                     onPressed: () {
-                      ref.read(nodeSpacingProvider.notifier).state = 200.0;
+                      ref.read(nodeSpacingProvider.notifier).state = 250.0;
                       Navigator.pop(context);
                     },
                     child: const Text('Reset Spacing'),

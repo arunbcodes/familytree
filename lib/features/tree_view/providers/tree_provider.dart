@@ -16,7 +16,8 @@ final selectedPersonIdProvider = StateProvider<String?>((ref) => null);
 final centerPersonIdProvider = StateProvider<String?>((ref) => null);
 
 /// Provider for node spacing (configurable via UI slider)
-final nodeSpacingProvider = StateProvider<double>((ref) => 200.0);
+/// Default of 250 provides comfortable spacing for most family trees
+final nodeSpacingProvider = StateProvider<double>((ref) => 250.0);
 
 /// Provider for custom node positions (set by dragging)
 final customNodePositionsProvider = StateProvider<Map<String, Offset>>((ref) => {});

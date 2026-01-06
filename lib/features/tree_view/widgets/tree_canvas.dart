@@ -27,7 +27,7 @@ class TreeCanvas extends StatefulWidget {
     required this.relationships,
     required this.centerPersonId,
     this.layoutType = LayoutType.radial,
-    this.nodeSpacing = 200.0,
+    this.nodeSpacing = 250.0,
     this.customPositions,
     this.onPersonTap,
     this.onPersonDoubleTap,
