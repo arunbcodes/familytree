@@ -12,6 +12,7 @@ class TreeCanvas extends StatefulWidget {
   final List<Relationship> relationships;
   final String centerPersonId;
   final LayoutType layoutType;
+  final double nodeSpacing;
   final Function(String personId)? onPersonTap;
   final Function(String personId)? onPersonDoubleTap;
   final Function(String personId)? onPersonLongPress;
@@ -24,6 +25,7 @@ class TreeCanvas extends StatefulWidget {
     required this.relationships,
     required this.centerPersonId,
     this.layoutType = LayoutType.radial,
+    this.nodeSpacing = 200.0,
     this.onPersonTap,
     this.onPersonDoubleTap,
     this.onPersonLongPress,
@@ -62,11 +64,12 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
   void didUpdateWidget(TreeCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Recalculate layout if data or layout type changed
+    // Recalculate layout if data, layout type, or spacing changed
     if (oldWidget.persons != widget.persons ||
         oldWidget.relationships != widget.relationships ||
         oldWidget.layoutType != widget.layoutType ||
-        oldWidget.centerPersonId != widget.centerPersonId) {
+        oldWidget.centerPersonId != widget.centerPersonId ||
+        oldWidget.nodeSpacing != widget.nodeSpacing) {
       _calculateLayout();
     }
   }
@@ -85,7 +88,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
           centerPersonId: widget.centerPersonId,
           persons: widget.persons,
           relationships: widget.relationships,
-          nodeSpacing: AppSizes.nodeSpacing,
+          nodeSpacing: widget.nodeSpacing,
         );
         break;
       case LayoutType.tree:
@@ -93,6 +96,8 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
           rootPersonId: widget.centerPersonId,
           persons: widget.persons,
           relationships: widget.relationships,
+          horizontalSpacing: widget.nodeSpacing * 0.6,
+          verticalSpacing: widget.nodeSpacing * 0.75,
         );
         break;
       case LayoutType.sunburst:
@@ -100,6 +105,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
           centerPersonId: widget.centerPersonId,
           persons: widget.persons,
           relationships: widget.relationships,
+          ringSpacing: widget.nodeSpacing * 0.9,
         );
         break;
       case LayoutType.forceDirected:
@@ -108,6 +114,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
           centerPersonId: widget.centerPersonId,
           persons: widget.persons,
           relationships: widget.relationships,
+          nodeSpacing: widget.nodeSpacing,
         );
         _nodePositions = GraphLayout.applyForceDirectedLayout(
           initialPositions: initial,

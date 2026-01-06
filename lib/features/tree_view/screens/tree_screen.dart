@@ -252,6 +252,7 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
     final treeDataAsync = ref.watch(treeNotifierProvider(_treeId!));
     final selectedPersonId = ref.watch(selectedPersonIdProvider);
     final centerPersonId = ref.watch(centerPersonIdProvider);
+    final nodeSpacing = ref.watch(nodeSpacingProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -267,6 +268,12 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
                 ref.read(selectedPersonIdProvider.notifier).state = personId;
               },
             ),
+          // Spacing slider
+          IconButton(
+            icon: const Icon(Icons.space_bar),
+            tooltip: 'Adjust spacing',
+            onPressed: () => _showSpacingSlider(context, ref, nodeSpacing),
+          ),
           // Layout type toggle
           PopupMenuButton<LayoutType>(
             icon: const Icon(Icons.auto_graph),
@@ -319,6 +326,7 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
             relationships: treeData.relationships,
             centerPersonId: center,
             layoutType: _layoutType,
+            nodeSpacing: nodeSpacing,
             onPersonTap: (personId) {
               HapticFeedback.selectionClick();
               ref.read(selectedPersonIdProvider.notifier).state =
@@ -371,6 +379,79 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
           const SizedBox(width: 8),
           Text(label),
         ],
+      ),
+    );
+  }
+
+  void _showSpacingSlider(BuildContext context, WidgetRef ref, double currentSpacing) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Node Spacing',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Adjust the distance between nodes',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 24),
+              StatefulBuilder(
+                builder: (context, setSliderState) {
+                  return Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Compact'),
+                          Text('${currentSpacing.round()}'),
+                          const Text('Spacious'),
+                        ],
+                      ),
+                      Slider(
+                        value: currentSpacing,
+                        min: 120.0,
+                        max: 350.0,
+                        divisions: 23,
+                        onChanged: (value) {
+                          setSliderState(() {
+                            currentSpacing = value;
+                          });
+                          ref.read(nodeSpacingProvider.notifier).state = value;
+                        },
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      ref.read(nodeSpacingProvider.notifier).state = 200.0;
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Reset to Default'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

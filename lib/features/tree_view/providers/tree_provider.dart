@@ -14,6 +14,9 @@ final selectedPersonIdProvider = StateProvider<String?>((ref) => null);
 /// Provider for the center person ID (the person at the center of the view)
 final centerPersonIdProvider = StateProvider<String?>((ref) => null);
 
+/// Provider for node spacing (configurable via UI slider)
+final nodeSpacingProvider = StateProvider<double>((ref) => 200.0);
+
 /// Provider for tree data (persons and relationships)
 final treeDataProvider =
     FutureProvider.autoDispose.family<TreeData?, String>((ref, treeId) async {
