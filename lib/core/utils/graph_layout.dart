@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../data/models/person.dart';
 import '../../data/models/relationship.dart';
 
+/// Minimum node size for collision calculations (hexagon width + padding)
+const double _minNodeSize = 100.0;
+
 /// Utility class for calculating graph layouts
 class GraphLayout {
   GraphLayout._();
@@ -13,7 +16,7 @@ class GraphLayout {
     required String centerPersonId,
     required List<Person> persons,
     required List<Relationship> relationships,
-    double nodeSpacing = 200.0, // Increased from 150 for better separation
+    double nodeSpacing = 200.0,
   }) {
     final positions = <String, Offset>{};
     final visited = <String>{};
@@ -52,11 +55,17 @@ class GraphLayout {
       final nodesInLayer = entry.value;
       final nodeCount = nodesInLayer.length;
 
-      // Adaptive radius: ensure minimum arc distance between nodes
-      // Minimum arc distance = nodeSpacing, circumference = 2 * pi * radius
-      // So radius = (nodeCount * nodeSpacing) / (2 * pi)
-      final minRadiusForSpacing = (nodeCount * nodeSpacing) / (2 * math.pi);
-      final baseRadius = layer * nodeSpacing;
+      // Calculate minimum radius needed to prevent node overlaps
+      // Each node needs at least _minNodeSize arc length between centers
+      // Arc length = radius * angle, so for nodeCount nodes:
+      // circumference >= nodeCount * max(nodeSpacing, _minNodeSize)
+      final effectiveSpacing = math.max(nodeSpacing, _minNodeSize);
+      final minRadiusForSpacing = (nodeCount * effectiveSpacing) / (2 * math.pi);
+      
+      // Base radius grows with each layer, ensuring outer rings are larger
+      final baseRadius = layer * nodeSpacing * 1.2; // 20% extra per layer
+      
+      // Use whichever is larger to prevent overlaps
       final radius = math.max(baseRadius, minRadiusForSpacing);
 
       final angleStep = 2 * math.pi / math.max(nodeCount, 1);
@@ -141,7 +150,7 @@ class GraphLayout {
     required String centerPersonId,
     required List<Person> persons,
     required List<Relationship> relationships,
-    double ringSpacing = 180.0, // Increased from 120 for better separation
+    double ringSpacing = 180.0,
   }) {
     final positions = <String, Offset>{};
     final visited = <String>{};
@@ -178,9 +187,14 @@ class GraphLayout {
       final nodesInRing = entry.value;
       final nodeCount = nodesInRing.length;
 
-      // Adaptive radius: ensure minimum arc distance between nodes
-      final minRadiusForSpacing = (nodeCount * ringSpacing) / (2 * math.pi);
-      final baseRadius = ring * ringSpacing;
+      // Calculate minimum radius needed to prevent node overlaps
+      final effectiveSpacing = math.max(ringSpacing, _minNodeSize);
+      final minRadiusForSpacing = (nodeCount * effectiveSpacing) / (2 * math.pi);
+      
+      // Base radius grows with each ring, with extra padding
+      final baseRadius = ring * ringSpacing * 1.2;
+      
+      // Use whichever is larger to prevent overlaps
       final radius = math.max(baseRadius, minRadiusForSpacing);
 
       final angleStep = 2 * math.pi / nodeCount;
