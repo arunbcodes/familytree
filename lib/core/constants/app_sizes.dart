@@ -25,7 +25,7 @@ class AppSizes {
   static const double radiusXl = 24.0;
 
   // Graph layout
-  static const double nodeSpacing = 150.0;
+  static const double nodeSpacing = 200.0; // Increased for better node separation
   static const double edgeThickness = 2.0;
   static const double edgeThicknessSelected = 3.0;
 

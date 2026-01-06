@@ -13,44 +13,64 @@ class GraphLayout {
     required String centerPersonId,
     required List<Person> persons,
     required List<Relationship> relationships,
-    double nodeSpacing = 150.0,
+    double nodeSpacing = 200.0, // Increased from 150 for better separation
   }) {
     final positions = <String, Offset>{};
     final visited = <String>{};
+    final layerNodes = <int, List<String>>{}; // Track nodes per layer
 
     // Place center person at origin
     positions[centerPersonId] = Offset.zero;
     visited.add(centerPersonId);
 
-    // BFS to place connected persons in layers
+    // First pass: BFS to assign layers
     final queue = <_LayoutNode>[_LayoutNode(centerPersonId, 0)];
+    final nodeToLayer = <String, int>{centerPersonId: 0};
 
     while (queue.isNotEmpty) {
       final current = queue.removeAt(0);
+      layerNodes.putIfAbsent(current.layer, () => []);
+      if (current.layer > 0) {
+        layerNodes[current.layer]!.add(current.personId);
+      }
+
       final connections = _getConnectedPersonIds(current.personId, relationships);
-      final unvisitedConnections = connections.where((id) => !visited.contains(id)).toList();
+      for (final connectedId in connections) {
+        if (!visited.contains(connectedId)) {
+          visited.add(connectedId);
+          nodeToLayer[connectedId] = current.layer + 1;
+          queue.add(_LayoutNode(connectedId, current.layer + 1));
+        }
+      }
+    }
 
-      if (unvisitedConnections.isEmpty) continue;
+    // Second pass: Position nodes in each ring with adaptive spacing
+    for (final entry in layerNodes.entries) {
+      final layer = entry.key;
+      if (layer == 0) continue; // Center already at origin
 
-      // Calculate positions in a circle around current node
-      final currentPos = positions[current.personId]!;
-      final radius = nodeSpacing;
-      final angleStep = 2 * math.pi / math.max(unvisitedConnections.length, 1);
+      final nodesInLayer = entry.value;
+      final nodeCount = nodesInLayer.length;
 
-      // Offset angle based on layer to create spiral effect
-      final baseAngle = current.layer * math.pi / 6;
+      // Adaptive radius: ensure minimum arc distance between nodes
+      // Minimum arc distance = nodeSpacing, circumference = 2 * pi * radius
+      // So radius = (nodeCount * nodeSpacing) / (2 * pi)
+      final minRadiusForSpacing = (nodeCount * nodeSpacing) / (2 * math.pi);
+      final baseRadius = layer * nodeSpacing;
+      final radius = math.max(baseRadius, minRadiusForSpacing);
 
-      for (int i = 0; i < unvisitedConnections.length; i++) {
-        final connectedId = unvisitedConnections[i];
-        final angle = baseAngle + angleStep * i - math.pi / 2;
+      final angleStep = 2 * math.pi / math.max(nodeCount, 1);
+      // Offset angle per layer to create staggered effect
+      final baseAngle = (layer % 2 == 0) ? 0.0 : angleStep / 2;
 
-        positions[connectedId] = Offset(
-          currentPos.dx + radius * math.cos(angle),
-          currentPos.dy + radius * math.sin(angle),
+      for (int i = 0; i < nodeCount; i++) {
+        final nodeId = nodesInLayer[i];
+        final angle = baseAngle + angleStep * i - math.pi / 2; // Start from top
+
+        positions[nodeId] = Offset(
+          radius * math.cos(angle),
+          radius * math.sin(angle),
         );
-
-        visited.add(connectedId);
-        queue.add(_LayoutNode(connectedId, current.layer + 1));
       }
     }
 
@@ -121,7 +141,7 @@ class GraphLayout {
     required String centerPersonId,
     required List<Person> persons,
     required List<Relationship> relationships,
-    double ringSpacing = 120.0,
+    double ringSpacing = 180.0, // Increased from 120 for better separation
   }) {
     final positions = <String, Offset>{};
     final visited = <String>{};
@@ -150,17 +170,25 @@ class GraphLayout {
       }
     }
 
-    // Position each ring
+    // Position each ring with adaptive spacing
     for (final entry in rings.entries) {
       final ring = entry.key;
       if (ring == 0) continue; // Center already positioned
 
       final nodesInRing = entry.value;
-      final radius = ring * ringSpacing;
-      final angleStep = 2 * math.pi / nodesInRing.length;
+      final nodeCount = nodesInRing.length;
 
-      for (int i = 0; i < nodesInRing.length; i++) {
-        final angle = angleStep * i - math.pi / 2; // Start from top
+      // Adaptive radius: ensure minimum arc distance between nodes
+      final minRadiusForSpacing = (nodeCount * ringSpacing) / (2 * math.pi);
+      final baseRadius = ring * ringSpacing;
+      final radius = math.max(baseRadius, minRadiusForSpacing);
+
+      final angleStep = 2 * math.pi / nodeCount;
+      // Stagger alternate rings for better visual separation
+      final baseAngle = (ring % 2 == 0) ? 0.0 : angleStep / 2;
+
+      for (int i = 0; i < nodeCount; i++) {
+        final angle = baseAngle + angleStep * i - math.pi / 2; // Start from top
         positions[nodesInRing[i]] = Offset(
           radius * math.cos(angle),
           radius * math.sin(angle),
