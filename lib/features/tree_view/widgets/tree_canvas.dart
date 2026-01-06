@@ -13,11 +13,13 @@ class TreeCanvas extends StatefulWidget {
   final String centerPersonId;
   final LayoutType layoutType;
   final double nodeSpacing;
+  final Map<String, Offset>? customPositions;
   final Function(String personId)? onPersonTap;
   final Function(String personId)? onPersonDoubleTap;
   final Function(String personId)? onPersonLongPress;
   final Function(String personId)? onExpandPerson;
   final Function(Offset position)? onAddPerson;
+  final Function(String personId, Offset position)? onPersonDragged;
 
   const TreeCanvas({
     super.key,
@@ -26,11 +28,13 @@ class TreeCanvas extends StatefulWidget {
     required this.centerPersonId,
     this.layoutType = LayoutType.radial,
     this.nodeSpacing = 200.0,
+    this.customPositions,
     this.onPersonTap,
     this.onPersonDoubleTap,
     this.onPersonLongPress,
     this.onExpandPerson,
     this.onAddPerson,
+    this.onPersonDragged,
   });
 
   @override
@@ -39,12 +43,23 @@ class TreeCanvas extends StatefulWidget {
 
 class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
   final TransformationController _transformController = TransformationController();
-  Map<String, Offset> _nodePositions = {};
+  Map<String, Offset> _algorithmPositions = {};
+  Map<String, Offset> _customPositions = {};
   String? _selectedPersonId;
+  String? _draggingPersonId;
   double _currentScale = 1.0;
 
   // Animation controllers
   late AnimationController _appearAnimController;
+
+  /// Get the effective position for a person (custom if set, otherwise algorithm)
+  Map<String, Offset> get _nodePositions {
+    final positions = Map<String, Offset>.from(_algorithmPositions);
+    for (final entry in _customPositions.entries) {
+      positions[entry.key] = entry.value;
+    }
+    return positions;
+  }
 
   @override
   void initState() {
@@ -53,6 +68,11 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: AppSizes.animationSlow),
     );
+
+    // Load custom positions if provided
+    if (widget.customPositions != null) {
+      _customPositions = Map.from(widget.customPositions!);
+    }
 
     _calculateLayout();
     _centerOnPerson(widget.centerPersonId);
@@ -84,7 +104,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
   void _calculateLayout() {
     switch (widget.layoutType) {
       case LayoutType.radial:
-        _nodePositions = GraphLayout.calculateRadialLayout(
+        _algorithmPositions = GraphLayout.calculateRadialLayout(
           centerPersonId: widget.centerPersonId,
           persons: widget.persons,
           relationships: widget.relationships,
@@ -92,7 +112,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
         );
         break;
       case LayoutType.tree:
-        _nodePositions = GraphLayout.calculateTreeLayout(
+        _algorithmPositions = GraphLayout.calculateTreeLayout(
           rootPersonId: widget.centerPersonId,
           persons: widget.persons,
           relationships: widget.relationships,
@@ -101,7 +121,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
         );
         break;
       case LayoutType.sunburst:
-        _nodePositions = GraphLayout.calculateSunburstLayout(
+        _algorithmPositions = GraphLayout.calculateSunburstLayout(
           centerPersonId: widget.centerPersonId,
           persons: widget.persons,
           relationships: widget.relationships,
@@ -116,7 +136,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
           relationships: widget.relationships,
           nodeSpacing: widget.nodeSpacing,
         );
-        _nodePositions = GraphLayout.applyForceDirectedLayout(
+        _algorithmPositions = GraphLayout.applyForceDirectedLayout(
           initialPositions: initial,
           relationships: widget.relationships,
         );
@@ -254,16 +274,24 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
         AppSizes.canvasCenter + position.dy,
       );
 
+      final isDragging = _draggingPersonId == person.id;
+      final hasCustomPosition = _customPositions.containsKey(person.id);
+
       // Use simplified nodes when zoomed out or many nodes
       if (useLOD) {
         nodes.add(
           Positioned(
             left: canvasPos.dx - 12,
             top: canvasPos.dy - 12,
-            child: SimplifiedPersonNode(
-              person: person,
-              isSelected: _selectedPersonId == person.id,
-              onTap: () => _handlePersonTap(person.id),
+            child: GestureDetector(
+              onPanStart: (_) => _handleDragStart(person.id),
+              onPanUpdate: (details) => _handleDragUpdate(person.id, details),
+              onPanEnd: (_) => _handleDragEnd(person.id),
+              child: SimplifiedPersonNode(
+                person: person,
+                isSelected: _selectedPersonId == person.id,
+                onTap: () => _handlePersonTap(person.id),
+              ),
             ),
           ),
         );
@@ -274,18 +302,52 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
           Positioned(
             left: canvasPos.dx - (AppSizes.hexagonMedium * nodeScale) / 2,
             top: canvasPos.dy - (AppSizes.hexagonMedium * 1.1547 * nodeScale) / 2,
-            child: FadeTransition(
-              opacity: _appearAnimController,
-              child:               PersonNode(
-                person: person,
-                isSelected: _selectedPersonId == person.id,
-                isCenter: person.id == widget.centerPersonId,
-                showExpandButton: _selectedPersonId == person.id,
-                scale: nodeScale,
-                onTap: () => _handlePersonTap(person.id),
-                onDoubleTap: () => _handlePersonDoubleTap(person.id),
-                onLongPress: () => widget.onPersonLongPress?.call(person.id),
-                onExpand: () => widget.onExpandPerson?.call(person.id),
+            child: GestureDetector(
+              onPanStart: (_) => _handleDragStart(person.id),
+              onPanUpdate: (details) => _handleDragUpdate(person.id, details),
+              onPanEnd: (_) => _handleDragEnd(person.id),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  FadeTransition(
+                    opacity: _appearAnimController,
+                    child: AnimatedScale(
+                      scale: isDragging ? 1.1 : 1.0,
+                      duration: const Duration(milliseconds: 100),
+                      child: PersonNode(
+                        person: person,
+                        isSelected: _selectedPersonId == person.id,
+                        isCenter: person.id == widget.centerPersonId,
+                        showExpandButton: _selectedPersonId == person.id,
+                        scale: nodeScale,
+                        onTap: () => _handlePersonTap(person.id),
+                        onDoubleTap: () => _handlePersonDoubleTap(person.id),
+                        onLongPress: () => widget.onPersonLongPress?.call(person.id),
+                        onExpand: () => widget.onExpandPerson?.call(person.id),
+                      ),
+                    ),
+                  ),
+                  // Custom position indicator
+                  if (hasCustomPosition)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1),
+                        ),
+                        child: const Icon(
+                          Icons.push_pin,
+                          size: 8,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -294,6 +356,39 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
     }
 
     return nodes;
+  }
+
+  void _handleDragStart(String personId) {
+    setState(() {
+      _draggingPersonId = personId;
+    });
+  }
+
+  void _handleDragUpdate(String personId, DragUpdateDetails details) {
+    // Convert screen delta to canvas delta (accounting for zoom)
+    final scaledDelta = details.delta / _currentScale;
+
+    setState(() {
+      // Get current position (custom or algorithm)
+      final currentPos = _customPositions[personId] ?? _algorithmPositions[personId];
+      if (currentPos == null) return;
+
+      // Update custom position
+      _customPositions[personId] = Offset(
+        currentPos.dx + scaledDelta.dx,
+        currentPos.dy + scaledDelta.dy,
+      );
+    });
+  }
+
+  void _handleDragEnd(String personId) {
+    final position = _customPositions[personId];
+    if (position != null) {
+      widget.onPersonDragged?.call(personId, position);
+    }
+    setState(() {
+      _draggingPersonId = null;
+    });
   }
 
   void _handlePersonTap(String personId) {

@@ -1,3 +1,4 @@
+import 'dart:ui' show Offset;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/person.dart';
@@ -16,6 +17,9 @@ final centerPersonIdProvider = StateProvider<String?>((ref) => null);
 
 /// Provider for node spacing (configurable via UI slider)
 final nodeSpacingProvider = StateProvider<double>((ref) => 200.0);
+
+/// Provider for custom node positions (set by dragging)
+final customNodePositionsProvider = StateProvider<Map<String, Offset>>((ref) => {});
 
 /// Provider for tree data (persons and relationships)
 final treeDataProvider =

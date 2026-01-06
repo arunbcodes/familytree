@@ -253,6 +253,7 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
     final selectedPersonId = ref.watch(selectedPersonIdProvider);
     final centerPersonId = ref.watch(centerPersonIdProvider);
     final nodeSpacing = ref.watch(nodeSpacingProvider);
+    final customPositions = ref.watch(customNodePositionsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -327,6 +328,7 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
             centerPersonId: center,
             layoutType: _layoutType,
             nodeSpacing: nodeSpacing,
+            customPositions: customPositions.isNotEmpty ? customPositions : null,
             onPersonTap: (personId) {
               HapticFeedback.selectionClick();
               ref.read(selectedPersonIdProvider.notifier).state =
@@ -351,6 +353,14 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
             },
             onExpandPerson: (personId) {
               _showAddRelativeSheet(personId, treeData.persons);
+            },
+            onPersonDragged: (personId, position) {
+              // Save custom position
+              final positions = Map<String, Offset>.from(
+                ref.read(customNodePositionsProvider),
+              );
+              positions[personId] = position;
+              ref.read(customNodePositionsProvider.notifier).state = positions;
             },
           );
         },
@@ -384,6 +394,9 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
   }
 
   void _showSpacingSlider(BuildContext context, WidgetRef ref, double currentSpacing) {
+    final customPositions = ref.read(customNodePositionsProvider);
+    final hasCustomPositions = customPositions.isNotEmpty;
+
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -394,15 +407,19 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Node Spacing',
+                'Layout Settings',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
+              // Spacing slider section
               Text(
-                'Adjust the distance between nodes',
-                style: TextStyle(color: Colors.grey.shade600),
+                'Node Spacing',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
               StatefulBuilder(
                 builder: (context, setSliderState) {
                   return Column(
@@ -431,7 +448,38 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              // Custom positions section
+              if (hasCustomPositions) ...[
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.push_pin, size: 20, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${customPositions.length} node(s) manually positioned',
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    ref.read(customNodePositionsProvider.notifier).state = {};
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('All positions reset to auto-layout'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Reset All Positions'),
+                ),
+              ],
+              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -440,7 +488,7 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
                       ref.read(nodeSpacingProvider.notifier).state = 200.0;
                       Navigator.pop(context);
                     },
-                    child: const Text('Reset to Default'),
+                    child: const Text('Reset Spacing'),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
