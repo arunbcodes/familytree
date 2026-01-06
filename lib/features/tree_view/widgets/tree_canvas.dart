@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/utils/graph_layout.dart';
 import '../../../data/models/person.dart';
@@ -359,6 +360,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
   }
 
   void _handleDragStart(String personId) {
+    HapticFeedback.selectionClick();
     setState(() {
       _draggingPersonId = personId;
     });
@@ -384,6 +386,7 @@ class _TreeCanvasState extends State<TreeCanvas> with TickerProviderStateMixin {
   void _handleDragEnd(String personId) {
     final position = _customPositions[personId];
     if (position != null) {
+      HapticFeedback.lightImpact();
       widget.onPersonDragged?.call(personId, position);
     }
     setState(() {
