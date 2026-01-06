@@ -44,6 +44,10 @@ class PersonsTable extends Table {
   TextColumn get visibility =>
       text().withDefault(const Constant('treeMembers'))();
 
+  // Custom layout position (set by user dragging)
+  RealColumn get customX => real().nullable().named('custom_x')();
+  RealColumn get customY => real().nullable().named('custom_y')();
+
   // Metadata
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();

@@ -1,3 +1,4 @@
+import 'dart:ui' show Offset;
 import 'package:uuid/uuid.dart';
 
 import '../database/database.dart';
@@ -198,6 +199,16 @@ class TreeRepository {
     return _db.personDao.searchPersons(treeId, query);
   }
 
+  /// Update custom position for a person
+  Future<void> updatePersonPosition(String personId, double? x, double? y) {
+    return _db.personDao.updateCustomPosition(personId, x, y);
+  }
+
+  /// Clear all custom positions for a tree
+  Future<void> clearCustomPositions(String treeId) {
+    return _db.personDao.clearCustomPositions(treeId);
+  }
+
   // ============ Relationship Operations ============
 
   /// Get all relationships in a tree
@@ -350,6 +361,17 @@ class TreeData {
       }
     }
     return connected;
+  }
+
+  /// Get custom positions map from persons who have them
+  Map<String, Offset> get customPositions {
+    final positions = <String, Offset>{};
+    for (final person in persons) {
+      if (person.hasCustomPosition) {
+        positions[person.id] = Offset(person.customX!, person.customY!);
+      }
+    }
+    return positions;
   }
 }
 

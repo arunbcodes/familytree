@@ -103,6 +103,28 @@ class PersonDao extends DatabaseAccessor<AppDatabase> with _$PersonDaoMixin {
     return rows.map(_rowToPerson).toList();
   }
 
+  /// Update custom position for a person
+  Future<void> updateCustomPosition(String id, double? x, double? y) async {
+    await (update(personsTable)..where((p) => p.id.equals(id))).write(
+      PersonsTableCompanion(
+        customX: Value(x),
+        customY: Value(y),
+        updatedAt: Value(DateTime.now()),
+        isSynced: const Value(false),
+      ),
+    );
+  }
+
+  /// Clear all custom positions for a tree
+  Future<void> clearCustomPositions(String treeId) async {
+    await (update(personsTable)..where((p) => p.treeId.equals(treeId))).write(
+      const PersonsTableCompanion(
+        customX: Value(null),
+        customY: Value(null),
+      ),
+    );
+  }
+
   // Conversion helpers
   Person _rowToPerson(PersonsTableData row) {
     return Person(
@@ -135,6 +157,8 @@ class PersonDao extends DatabaseAccessor<AppDatabase> with _$PersonDaoMixin {
         (v) => v.name == row.visibility,
         orElse: () => PersonVisibility.treeMembers,
       ),
+      customX: row.customX,
+      customY: row.customY,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
@@ -172,6 +196,8 @@ class PersonDao extends DatabaseAccessor<AppDatabase> with _$PersonDaoMixin {
       proxyReason: Value(person.proxyReason),
       isElderlyAssisted: Value(person.isElderlyAssisted),
       visibility: Value(person.visibility.name),
+      customX: Value(person.customX),
+      customY: Value(person.customY),
       createdAt: Value(person.createdAt),
       updatedAt: Value(person.updatedAt),
       isSynced: const Value(false),

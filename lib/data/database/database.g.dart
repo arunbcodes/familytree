@@ -258,6 +258,28 @@ class $PersonsTableTable extends PersonsTable
     requiredDuringInsert: false,
     defaultValue: const Constant('treeMembers'),
   );
+  static const VerificationMeta _customXMeta = const VerificationMeta(
+    'customX',
+  );
+  @override
+  late final GeneratedColumn<double> customX = GeneratedColumn<double>(
+    'custom_x',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _customYMeta = const VerificationMeta(
+    'customY',
+  );
+  @override
+  late final GeneratedColumn<double> customY = GeneratedColumn<double>(
+    'custom_y',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -330,6 +352,8 @@ class $PersonsTableTable extends PersonsTable
     proxyReason,
     isElderlyAssisted,
     visibility,
+    customX,
+    customY,
     createdAt,
     updatedAt,
     isSynced,
@@ -507,6 +531,18 @@ class $PersonsTableTable extends PersonsTable
         visibility.isAcceptableOrUnknown(data['visibility']!, _visibilityMeta),
       );
     }
+    if (data.containsKey('custom_x')) {
+      context.handle(
+        _customXMeta,
+        customX.isAcceptableOrUnknown(data['custom_x']!, _customXMeta),
+      );
+    }
+    if (data.containsKey('custom_y')) {
+      context.handle(
+        _customYMeta,
+        customY.isAcceptableOrUnknown(data['custom_y']!, _customYMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -635,6 +671,14 @@ class $PersonsTableTable extends PersonsTable
         DriftSqlType.string,
         data['${effectivePrefix}visibility'],
       )!,
+      customX: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}custom_x'],
+      ),
+      customY: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}custom_y'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -684,6 +728,8 @@ class PersonsTableData extends DataClass
   final String? proxyReason;
   final bool isElderlyAssisted;
   final String visibility;
+  final double? customX;
+  final double? customY;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isSynced;
@@ -711,6 +757,8 @@ class PersonsTableData extends DataClass
     this.proxyReason,
     required this.isElderlyAssisted,
     required this.visibility,
+    this.customX,
+    this.customY,
     required this.createdAt,
     required this.updatedAt,
     required this.isSynced,
@@ -767,6 +815,12 @@ class PersonsTableData extends DataClass
     }
     map['is_elderly_assisted'] = Variable<bool>(isElderlyAssisted);
     map['visibility'] = Variable<String>(visibility);
+    if (!nullToAbsent || customX != null) {
+      map['custom_x'] = Variable<double>(customX);
+    }
+    if (!nullToAbsent || customY != null) {
+      map['custom_y'] = Variable<double>(customY);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['is_synced'] = Variable<bool>(isSynced);
@@ -824,6 +878,12 @@ class PersonsTableData extends DataClass
           : Value(proxyReason),
       isElderlyAssisted: Value(isElderlyAssisted),
       visibility: Value(visibility),
+      customX: customX == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customX),
+      customY: customY == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customY),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       isSynced: Value(isSynced),
@@ -861,6 +921,8 @@ class PersonsTableData extends DataClass
       proxyReason: serializer.fromJson<String?>(json['proxyReason']),
       isElderlyAssisted: serializer.fromJson<bool>(json['isElderlyAssisted']),
       visibility: serializer.fromJson<String>(json['visibility']),
+      customX: serializer.fromJson<double?>(json['customX']),
+      customY: serializer.fromJson<double?>(json['customY']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
@@ -893,6 +955,8 @@ class PersonsTableData extends DataClass
       'proxyReason': serializer.toJson<String?>(proxyReason),
       'isElderlyAssisted': serializer.toJson<bool>(isElderlyAssisted),
       'visibility': serializer.toJson<String>(visibility),
+      'customX': serializer.toJson<double?>(customX),
+      'customY': serializer.toJson<double?>(customY),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
@@ -923,6 +987,8 @@ class PersonsTableData extends DataClass
     Value<String?> proxyReason = const Value.absent(),
     bool? isElderlyAssisted,
     String? visibility,
+    Value<double?> customX = const Value.absent(),
+    Value<double?> customY = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isSynced,
@@ -954,6 +1020,8 @@ class PersonsTableData extends DataClass
     proxyReason: proxyReason.present ? proxyReason.value : this.proxyReason,
     isElderlyAssisted: isElderlyAssisted ?? this.isElderlyAssisted,
     visibility: visibility ?? this.visibility,
+    customX: customX.present ? customX.value : this.customX,
+    customY: customY.present ? customY.value : this.customY,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     isSynced: isSynced ?? this.isSynced,
@@ -1001,6 +1069,8 @@ class PersonsTableData extends DataClass
       visibility: data.visibility.present
           ? data.visibility.value
           : this.visibility,
+      customX: data.customX.present ? data.customX.value : this.customX,
+      customY: data.customY.present ? data.customY.value : this.customY,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
@@ -1035,6 +1105,8 @@ class PersonsTableData extends DataClass
           ..write('proxyReason: $proxyReason, ')
           ..write('isElderlyAssisted: $isElderlyAssisted, ')
           ..write('visibility: $visibility, ')
+          ..write('customX: $customX, ')
+          ..write('customY: $customY, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
@@ -1067,6 +1139,8 @@ class PersonsTableData extends DataClass
     proxyReason,
     isElderlyAssisted,
     visibility,
+    customX,
+    customY,
     createdAt,
     updatedAt,
     isSynced,
@@ -1098,6 +1172,8 @@ class PersonsTableData extends DataClass
           other.proxyReason == this.proxyReason &&
           other.isElderlyAssisted == this.isElderlyAssisted &&
           other.visibility == this.visibility &&
+          other.customX == this.customX &&
+          other.customY == this.customY &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isSynced == this.isSynced &&
@@ -1127,6 +1203,8 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
   final Value<String?> proxyReason;
   final Value<bool> isElderlyAssisted;
   final Value<String> visibility;
+  final Value<double?> customX;
+  final Value<double?> customY;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<bool> isSynced;
@@ -1155,6 +1233,8 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     this.proxyReason = const Value.absent(),
     this.isElderlyAssisted = const Value.absent(),
     this.visibility = const Value.absent(),
+    this.customX = const Value.absent(),
+    this.customY = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
@@ -1184,6 +1264,8 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     this.proxyReason = const Value.absent(),
     this.isElderlyAssisted = const Value.absent(),
     this.visibility = const Value.absent(),
+    this.customX = const Value.absent(),
+    this.customY = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.isSynced = const Value.absent(),
@@ -1219,6 +1301,8 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     Expression<String>? proxyReason,
     Expression<bool>? isElderlyAssisted,
     Expression<String>? visibility,
+    Expression<double>? customX,
+    Expression<double>? customY,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isSynced,
@@ -1248,6 +1332,8 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
       if (proxyReason != null) 'proxy_reason': proxyReason,
       if (isElderlyAssisted != null) 'is_elderly_assisted': isElderlyAssisted,
       if (visibility != null) 'visibility': visibility,
+      if (customX != null) 'custom_x': customX,
+      if (customY != null) 'custom_y': customY,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isSynced != null) 'is_synced': isSynced,
@@ -1279,6 +1365,8 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     Value<String?>? proxyReason,
     Value<bool>? isElderlyAssisted,
     Value<String>? visibility,
+    Value<double?>? customX,
+    Value<double?>? customY,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<bool>? isSynced,
@@ -1308,6 +1396,8 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
       proxyReason: proxyReason ?? this.proxyReason,
       isElderlyAssisted: isElderlyAssisted ?? this.isElderlyAssisted,
       visibility: visibility ?? this.visibility,
+      customX: customX ?? this.customX,
+      customY: customY ?? this.customY,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
@@ -1385,6 +1475,12 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     if (visibility.present) {
       map['visibility'] = Variable<String>(visibility.value);
     }
+    if (customX.present) {
+      map['custom_x'] = Variable<double>(customX.value);
+    }
+    if (customY.present) {
+      map['custom_y'] = Variable<double>(customY.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1428,6 +1524,8 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
           ..write('proxyReason: $proxyReason, ')
           ..write('isElderlyAssisted: $isElderlyAssisted, ')
           ..write('visibility: $visibility, ')
+          ..write('customX: $customX, ')
+          ..write('customY: $customY, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
@@ -3438,6 +3536,8 @@ typedef $$PersonsTableTableCreateCompanionBuilder =
       Value<String?> proxyReason,
       Value<bool> isElderlyAssisted,
       Value<String> visibility,
+      Value<double?> customX,
+      Value<double?> customY,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<bool> isSynced,
@@ -3468,6 +3568,8 @@ typedef $$PersonsTableTableUpdateCompanionBuilder =
       Value<String?> proxyReason,
       Value<bool> isElderlyAssisted,
       Value<String> visibility,
+      Value<double?> customX,
+      Value<double?> customY,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<bool> isSynced,
@@ -3591,6 +3693,16 @@ class $$PersonsTableTableFilterComposer
 
   ColumnFilters<String> get visibility => $composableBuilder(
     column: $table.visibility,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get customX => $composableBuilder(
+    column: $table.customX,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get customY => $composableBuilder(
+    column: $table.customY,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3734,6 +3846,16 @@ class $$PersonsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get customX => $composableBuilder(
+    column: $table.customX,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get customY => $composableBuilder(
+    column: $table.customY,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3848,6 +3970,12 @@ class $$PersonsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<double> get customX =>
+      $composableBuilder(column: $table.customX, builder: (column) => column);
+
+  GeneratedColumn<double> get customY =>
+      $composableBuilder(column: $table.customY, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -3916,6 +4044,8 @@ class $$PersonsTableTableTableManager
                 Value<String?> proxyReason = const Value.absent(),
                 Value<bool> isElderlyAssisted = const Value.absent(),
                 Value<String> visibility = const Value.absent(),
+                Value<double?> customX = const Value.absent(),
+                Value<double?> customY = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
@@ -3944,6 +4074,8 @@ class $$PersonsTableTableTableManager
                 proxyReason: proxyReason,
                 isElderlyAssisted: isElderlyAssisted,
                 visibility: visibility,
+                customX: customX,
+                customY: customY,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
@@ -3974,6 +4106,8 @@ class $$PersonsTableTableTableManager
                 Value<String?> proxyReason = const Value.absent(),
                 Value<bool> isElderlyAssisted = const Value.absent(),
                 Value<String> visibility = const Value.absent(),
+                Value<double?> customX = const Value.absent(),
+                Value<double?> customY = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<bool> isSynced = const Value.absent(),
@@ -4002,6 +4136,8 @@ class $$PersonsTableTableTableManager
                 proxyReason: proxyReason,
                 isElderlyAssisted: isElderlyAssisted,
                 visibility: visibility,
+                customX: customX,
+                customY: customY,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 isSynced: isSynced,

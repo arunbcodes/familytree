@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -42,7 +42,11 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Handle future migrations here
+        // Migration from version 1 to 2: add custom position columns
+        if (from < 2) {
+          await m.addColumn(personsTable, personsTable.customX);
+          await m.addColumn(personsTable, personsTable.customY);
+        }
       },
     );
   }

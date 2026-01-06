@@ -48,6 +48,10 @@ class Person {
   // Privacy
   final PersonVisibility visibility;
 
+  // Custom layout position (set by user dragging)
+  final double? customX;
+  final double? customY;
+
   // Metadata
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -75,6 +79,8 @@ class Person {
     this.proxyReason,
     this.isElderlyAssisted = false,
     this.visibility = PersonVisibility.treeMembers,
+    this.customX,
+    this.customY,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -110,6 +116,9 @@ class Person {
   /// Whether this person is managed by a proxy
   bool get hasProxy => proxyManagers.isNotEmpty;
 
+  /// Whether this person has a custom layout position
+  bool get hasCustomPosition => customX != null && customY != null;
+
   /// Create a copy with updated fields
   Person copyWith({
     String? id,
@@ -134,6 +143,8 @@ class Person {
     String? proxyReason,
     bool? isElderlyAssisted,
     PersonVisibility? visibility,
+    double? customX,
+    double? customY,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -160,6 +171,8 @@ class Person {
       proxyReason: proxyReason ?? this.proxyReason,
       isElderlyAssisted: isElderlyAssisted ?? this.isElderlyAssisted,
       visibility: visibility ?? this.visibility,
+      customX: customX ?? this.customX,
+      customY: customY ?? this.customY,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -190,6 +203,8 @@ class Person {
       'proxy_reason': proxyReason,
       'is_elderly_assisted': isElderlyAssisted,
       'visibility': visibility.name,
+      'custom_x': customX,
+      'custom_y': customY,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -229,6 +244,8 @@ class Person {
         (v) => v.name == json['visibility'],
         orElse: () => PersonVisibility.treeMembers,
       ),
+      customX: (json['custom_x'] as num?)?.toDouble(),
+      customY: (json['custom_y'] as num?)?.toDouble(),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );

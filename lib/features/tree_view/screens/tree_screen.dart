@@ -322,13 +322,18 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
           // Determine center person
           final center = centerPersonId ?? treeData.persons.first.id;
 
+          // Merge database positions with local state positions
+          final dbPositions = treeData.customPositions;
+          final localPositions = customPositions;
+          final mergedPositions = {...dbPositions, ...localPositions};
+
           return TreeCanvas(
             persons: treeData.persons,
             relationships: treeData.relationships,
             centerPersonId: center,
             layoutType: _layoutType,
             nodeSpacing: nodeSpacing,
-            customPositions: customPositions.isNotEmpty ? customPositions : null,
+            customPositions: mergedPositions.isNotEmpty ? mergedPositions : null,
             onPersonTap: (personId) {
               HapticFeedback.selectionClick();
               ref.read(selectedPersonIdProvider.notifier).state =
@@ -354,13 +359,17 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
             onExpandPerson: (personId) {
               _showAddRelativeSheet(personId, treeData.persons);
             },
-            onPersonDragged: (personId, position) {
-              // Save custom position
+            onPersonDragged: (personId, position) async {
+              // Save custom position to local state
               final positions = Map<String, Offset>.from(
                 ref.read(customNodePositionsProvider),
               );
               positions[personId] = position;
               ref.read(customNodePositionsProvider.notifier).state = positions;
+
+              // Persist to database
+              final repository = ref.read(treeRepositoryProvider);
+              await repository.updatePersonPosition(personId, position.dx, position.dy);
             },
           );
         },
@@ -465,15 +474,25 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
+                    // Clear from local state
                     ref.read(customNodePositionsProvider.notifier).state = {};
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('All positions reset to auto-layout'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    // Clear from database
+                    if (_treeId != null) {
+                      final repository = ref.read(treeRepositoryProvider);
+                      await repository.clearCustomPositions(_treeId!);
+                      // Refresh tree data
+                      ref.invalidate(treeNotifierProvider(_treeId!));
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('All positions reset to auto-layout'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Reset All Positions'),
