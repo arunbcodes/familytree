@@ -499,22 +499,25 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      ref.read(nodeSpacingProvider.notifier).state = 250.0;
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Reset Spacing'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Done'),
-                  ),
-                ],
+              Align(
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        ref.read(nodeSpacingProvider.notifier).state = 250.0;
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Reset Spacing'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
