@@ -12,6 +12,7 @@ import '../../../data/providers/database_provider.dart';
 import '../../../data/repositories/tree_repository.dart';
 import '../providers/tree_provider.dart';
 import '../widgets/tree_canvas.dart';
+import '../widgets/graph_tree_canvas.dart';
 import '../widgets/search_bar.dart';
 
 /// Main screen displaying the family tree visualization
@@ -24,6 +25,8 @@ class TreeScreen extends ConsumerStatefulWidget {
 
 class _TreeScreenState extends ConsumerState<TreeScreen> {
   LayoutType _layoutType = LayoutType.radial;
+  GraphAlgorithm _graphAlgorithm = GraphAlgorithm.buchheimerWalker;
+  bool _useGraphView = false; // Toggle between custom canvas and GraphView
   String? _treeId;
   bool _isInitialized = false;
 
@@ -275,19 +278,60 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
             tooltip: 'Adjust spacing',
             onPressed: () => _showSpacingSlider(context, ref, nodeSpacing),
           ),
+          // Render engine toggle
+          IconButton(
+            icon: Icon(_useGraphView ? Icons.auto_awesome : Icons.hexagon_outlined),
+            tooltip: _useGraphView ? 'Using GraphView' : 'Using Custom Canvas',
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              setState(() => _useGraphView = !_useGraphView);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_useGraphView
+                    ? 'Switched to GraphView (professional layouts)'
+                    : 'Switched to Custom Canvas (hexagon nodes)'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
           // Layout type toggle
-          PopupMenuButton<LayoutType>(
+          PopupMenuButton<dynamic>(
             icon: const Icon(Icons.auto_graph),
             tooltip: 'Change layout',
-            onSelected: (layout) {
+            onSelected: (value) {
               HapticFeedback.selectionClick();
-              setState(() => _layoutType = layout);
+              if (value is LayoutType) {
+                setState(() {
+                  _useGraphView = false;
+                  _layoutType = value;
+                });
+              } else if (value is GraphAlgorithm) {
+                setState(() {
+                  _useGraphView = true;
+                  _graphAlgorithm = value;
+                });
+              }
             },
             itemBuilder: (context) => [
+              // Custom canvas layouts
+              const PopupMenuItem(
+                enabled: false,
+                child: Text('Custom Canvas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
               _buildLayoutMenuItem(LayoutType.radial, Icons.radio_button_checked, 'Radial'),
               _buildLayoutMenuItem(LayoutType.sunburst, Icons.wb_sunny, 'Sunburst'),
               _buildLayoutMenuItem(LayoutType.tree, Icons.account_tree, 'Tree'),
               _buildLayoutMenuItem(LayoutType.forceDirected, Icons.hub, 'Force-Directed'),
+              const PopupMenuDivider(),
+              // GraphView layouts
+              const PopupMenuItem(
+                enabled: false,
+                child: Text('GraphView Engine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+              _buildGraphMenuItem(GraphAlgorithm.buchheimerWalker, Icons.account_tree_outlined, 'Hierarchical Tree'),
+              _buildGraphMenuItem(GraphAlgorithm.fruchtermanReingold, Icons.blur_on, 'Force-Directed Pro'),
+              _buildGraphMenuItem(GraphAlgorithm.sugiyama, Icons.layers, 'Layered Graph'),
             ],
           ),
           // Settings
@@ -321,6 +365,36 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
 
           // Determine center person
           final center = centerPersonId ?? treeData.persons.first.id;
+
+          // Use GraphView or custom canvas based on toggle
+          if (_useGraphView) {
+            return GraphTreeCanvas(
+              persons: treeData.persons,
+              relationships: treeData.relationships,
+              centerPersonId: center,
+              algorithm: _graphAlgorithm,
+              onPersonTap: (personId) {
+                HapticFeedback.selectionClick();
+                ref.read(selectedPersonIdProvider.notifier).state =
+                    selectedPersonId == personId ? null : personId;
+              },
+              onPersonDoubleTap: (personId) {
+                HapticFeedback.mediumImpact();
+                ref.read(centerPersonIdProvider.notifier).state = personId;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Centered on ${treeData.findPerson(personId)?.firstName ?? 'person'}'),
+                    duration: const Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              onPersonLongPress: (personId) {
+                HapticFeedback.mediumImpact();
+                context.push('/person/$personId');
+              },
+            );
+          }
 
           // Merge database positions with local state positions
           final dbPositions = treeData.customPositions;
@@ -387,16 +461,46 @@ class _TreeScreenState extends ConsumerState<TreeScreen> {
     IconData icon,
     String label,
   ) {
+    final isSelected = !_useGraphView && _layoutType == type;
     return PopupMenuItem(
       value: type,
       child: Row(
         children: [
           Icon(
             icon,
-            color: _layoutType == type ? AppColors.primary : null,
+            color: isSelected ? AppColors.primary : null,
           ),
           const SizedBox(width: 8),
           Text(label),
+          if (isSelected) ...[
+            const Spacer(),
+            const Icon(Icons.check, size: 18),
+          ],
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<GraphAlgorithm> _buildGraphMenuItem(
+    GraphAlgorithm algorithm,
+    IconData icon,
+    String label,
+  ) {
+    final isSelected = _useGraphView && _graphAlgorithm == algorithm;
+    return PopupMenuItem(
+      value: algorithm,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: isSelected ? Colors.purple : null,
+          ),
+          const SizedBox(width: 8),
+          Text(label),
+          if (isSelected) ...[
+            const Spacer(),
+            const Icon(Icons.check, size: 18),
+          ],
         ],
       ),
     );
